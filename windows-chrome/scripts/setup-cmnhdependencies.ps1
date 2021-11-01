@@ -11,7 +11,7 @@ mkdir 'C:\src';
 
 #VOLUME C:\\src
 
-mkdir 'C:\Tools';
+#mkdir 'C:\Tools';
 
 setx /M PATH $($Env:PATH + ';'+$Env:dotnetOctoPath+';C:\Users\ContainerAdministrator\AppData\Local\Microsoft\dotnet');
 
