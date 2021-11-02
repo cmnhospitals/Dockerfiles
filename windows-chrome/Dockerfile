@@ -2,19 +2,8 @@ FROM mcr.microsoft.com/windows/servercore:ltsc2019
 SHELL ["powershell", "-Command"]
 ENV dotnetOctoPath="C:\\Users\\ContainerAdministrator\\.dotnet\\tools"
 ENV DOTNET_ROOT="C:\\Users\\ContainerAdministrator\\AppData\\Local\\Microsoft\\dotnet"
-ARG NODE_VERSION=14.17.5
-ARG LOCAL_DEPLOY_VERSION=2.10.33
 ARG DOTNET_VERSION=5.0
-ARG DOTNET_OCTO_VERSION=7.4.3213
-ARG CMNH_MYGET_URL=https://www.myget.org/F/cmnhospitals/api/v2
-ARG CMNH_NUGET_SOURCE=https://www.myget.org/F/cmnhospitals/api/v3/index.json
-# Install Choco and chrome
-# RUN echo $Env:NODE_VERSION
-# RUN echo $Env:LOCAL_DEPLOY_VERSION
-# RUN echo $Env:DOTNET_VERSION
-# RUN echo $Env:DOTNET_OCTO_VERSION
-# RUN echo $Env:CMNH_MYGET_URL
-# RUN echo $Env:CMNH_NUGET_SOURCE
+
 # Install google chrome and .NET
 RUN $Path = $env:TEMP; \
     $Installer = 'chrome_installer.exe'; \
@@ -32,6 +21,7 @@ RUN $Path = $env:TEMP; \
 
 RUN setx /M PATH $($Env:PATH + ';'+$Env:dotnetOctoPath+';C:\Users\ContainerAdministrator\AppData\Local\Microsoft\dotnet')
 
+ARG CMNH_MYGET_URL=https://www.myget.org/F/cmnhospitals/api/v2
 # Local deploy and Az modules setup, along with dotnet tools
 RUN Install-PackageProvider -Name NuGet -Force; \
     Install-Module -Name PowerShellGet -Force; \
@@ -39,13 +29,17 @@ RUN Install-PackageProvider -Name NuGet -Force; \
     # Az modules
     Install-Module Az -Force -Scope CurrentUser;
 
+ARG CMNH_NUGET_SOURCE=https://www.myget.org/F/cmnhospitals/api/v3/index.json
+ARG DOTNET_OCTO_VERSION=7.4.3487
 # Preparing nuget sources and adding octopus cli tool
 RUN dotnet nuget add source https://api.nuget.org/v3/index.json --name nuget; \
     dotnet nuget add source $Env:CMNH_NUGET_SOURCE --name cmnh; \
     dotnet tool install Octopus.Dotnet.Cli --tool-path $Env:dotnetOctoPath --version $Env:DOTNET_OCTO_VERSION;
 
+ARG LOCAL_DEPLOY_VERSION=2.10.36
 RUN Install-Module LocalDeploy -Force -Scope CurrentUser -RequiredVersion $Env:LOCAL_DEPLOY_VERSION;
 
+ARG NODE_VERSION=14.17.5
 RUN $ProgressPreference = 'SilentlyContinue'; \
     Set-ExecutionPolicy Bypass -Scope Process -Force; \
     [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; \
