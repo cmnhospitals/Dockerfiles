@@ -18,6 +18,7 @@ RUN $Path = $env:TEMP; \
     .\dotnet-install.ps1 -Channel 6.0; \
     .\dotnet-install.ps1 -Channel 3.1; \
     .\dotnet-install.ps1 -Channel 2.1; \
+    .\dotnet-install.ps1 -Channel 2.2; \
     #Setting up the src dir to mount the volume outside the container
     mkdir 'C:\src'; \
     rm .\dotnet-install.ps1;
