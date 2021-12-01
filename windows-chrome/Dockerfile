@@ -15,6 +15,9 @@ RUN $Path = $env:TEMP; \
     # Install dotnet 
     [Environment]::SetEnvironmentVariable('DOTNET_CLI_TELEMETRY_OPTOUT', '1', 'Machine'); \
     .\dotnet-install.ps1 -Channel $Env:DOTNET_VERSION; \
+    .\dotnet-install.ps1 -Channel 6.0; \
+    .\dotnet-install.ps1 -Channel 3.1; \
+    .\dotnet-install.ps1 -Channel 2.1; \
     #Setting up the src dir to mount the volume outside the container
     mkdir 'C:\src'; \
     rm .\dotnet-install.ps1;
