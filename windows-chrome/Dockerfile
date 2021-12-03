@@ -40,7 +40,7 @@ RUN dotnet nuget add source https://api.nuget.org/v3/index.json --name nuget; \
     dotnet nuget add source $Env:CMNH_NUGET_SOURCE --name cmnh; \
     dotnet tool install Octopus.Dotnet.Cli --tool-path $Env:dotnetOctoPath --version $Env:DOTNET_OCTO_VERSION;
 
-ARG LOCAL_DEPLOY_VERSION=2.10.41
+ARG LOCAL_DEPLOY_VERSION=2.10.42
 RUN Install-Module LocalDeploy -Force -Scope CurrentUser -RequiredVersion $Env:LOCAL_DEPLOY_VERSION;
 
 ARG NODE_VERSION=14.17.5
