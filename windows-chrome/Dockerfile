@@ -34,13 +34,13 @@ RUN Install-PackageProvider -Name NuGet -Force; \
     Install-Module Az -Force -Scope CurrentUser;
 
 ARG CMNH_NUGET_SOURCE=https://www.myget.org/F/cmnhospitals/api/v3/index.json
-ARG DOTNET_OCTO_VERSION=7.4.3487
+ARG DOTNET_OCTO_VERSION=8.0.0
 # Preparing nuget sources and adding octopus cli tool
 RUN dotnet nuget add source https://api.nuget.org/v3/index.json --name nuget; \
     dotnet nuget add source $Env:CMNH_NUGET_SOURCE --name cmnh; \
     dotnet tool install Octopus.Dotnet.Cli --tool-path $Env:dotnetOctoPath --version $Env:DOTNET_OCTO_VERSION;
 
-ARG LOCAL_DEPLOY_VERSION=2.10.42
+ARG LOCAL_DEPLOY_VERSION=2.10.52
 RUN Install-Module LocalDeploy -Force -Scope CurrentUser -RequiredVersion $Env:LOCAL_DEPLOY_VERSION;
 
 ARG NODE_VERSION=14.17.5
