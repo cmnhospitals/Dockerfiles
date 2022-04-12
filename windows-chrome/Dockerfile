@@ -2,7 +2,7 @@ FROM mcr.microsoft.com/windows/servercore:ltsc2019
 SHELL ["powershell", "-Command"]
 ENV dotnetOctoPath="C:\\Users\\ContainerAdministrator\\.dotnet\\tools"
 ENV DOTNET_ROOT="C:\\Users\\ContainerAdministrator\\AppData\\Local\\Microsoft\\dotnet"
-ARG DOTNET_VERSION=5.0
+ARG DOTNET_VERSION=6.0
 
 # Install google chrome and .NET
 RUN $Path = $env:TEMP; \
@@ -15,7 +15,7 @@ RUN $Path = $env:TEMP; \
     # Install dotnet 
     [Environment]::SetEnvironmentVariable('DOTNET_CLI_TELEMETRY_OPTOUT', '1', 'Machine'); \
     .\dotnet-install.ps1 -Channel $Env:DOTNET_VERSION; \
-    .\dotnet-install.ps1 -Channel 6.0; \
+    .\dotnet-install.ps1 -Channel 5.0; \
     .\dotnet-install.ps1 -Channel 3.1; \
     .\dotnet-install.ps1 -Channel 2.1; \
     .\dotnet-install.ps1 -Channel 2.2; \
@@ -34,13 +34,13 @@ RUN Install-PackageProvider -Name NuGet -Force; \
     Install-Module Az -Force -Scope CurrentUser;
 
 ARG CMNH_NUGET_SOURCE=https://www.myget.org/F/cmnhospitals/api/v3/index.json
-ARG DOTNET_OCTO_VERSION=8.0.0
+ARG DOTNET_OCTO_VERSION=9.0.0
 # Preparing nuget sources and adding octopus cli tool
 RUN dotnet nuget add source https://api.nuget.org/v3/index.json --name nuget; \
     dotnet nuget add source $Env:CMNH_NUGET_SOURCE --name cmnh; \
     dotnet tool install Octopus.Dotnet.Cli --tool-path $Env:dotnetOctoPath --version $Env:DOTNET_OCTO_VERSION;
 
-ARG LOCAL_DEPLOY_VERSION=2.10.52
+ARG LOCAL_DEPLOY_VERSION=2.12.1
 RUN Install-Module LocalDeploy -Force -Scope CurrentUser -RequiredVersion $Env:LOCAL_DEPLOY_VERSION;
 
 ARG NODE_VERSION=14.17.5
