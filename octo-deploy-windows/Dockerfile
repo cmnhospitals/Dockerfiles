@@ -3,14 +3,14 @@
 FROM mcr.microsoft.com/windows/servercore:ltsc2019
 SHELL ["powershell", "-Command"]
 
-ARG Azure_Cli_Version=2.14.0
-ARG Azure_Powershell_Version=4.5.0
-ARG Octopus_Cli_Version=7.4.1
-ARG Octopus_Client_Version=8.8.3
-ARG Powershell_Version=7.0.6
-ARG Python_Version=3.8.5
-ARG ScriptCs_Version=0.17.1
-ARG 7Zip_Version=19.0
+ARG Azure_Cli_Version=2.36.0
+# ARG Azure_Powershell_Version=7.5.0
+# ARG Octopus_Cli_Version=9.0.0
+# ARG Octopus_Client_Version=13.0.3778
+ARG Powershell_Version=7.2.3
+ARG Python_Version=3.10.4
+# ARG ScriptCs_Version=0.17.1
+# ARG 7Zip_Version=19.0
 
 
 # Install Choco
