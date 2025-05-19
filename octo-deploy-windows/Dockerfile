@@ -3,15 +3,15 @@
 FROM mcr.microsoft.com/windows/servercore:ltsc2019
 SHELL ["powershell", "-Command"]
 
-ARG Azure_Cli_Version=2.36.0
+ARG Azure_Cli_Version=2.68.0
 # ARG Azure_Powershell_Version=7.5.0
 # ARG Octopus_Cli_Version=9.0.0
 # ARG Octopus_Client_Version=13.0.3778
-ARG Powershell_Version=7.2.3
-ARG Python_Version=3.10.4
+ARG Powershell_Version=7.5.0
+ARG Python_Version=3.12.8
 # ARG ScriptCs_Version=0.17.1
 # ARG 7Zip_Version=19.0
-
+ARG chocolateyVersion='1.4.1'
 
 # Install Choco
 RUN $ProgressPreference = 'SilentlyContinue'; `
@@ -28,13 +28,12 @@ RUN $ProgressPreference = 'SilentlyContinue'; `
 # Install Azure CLI
 RUN choco install azure-cli -y --version $Env:Azure_Cli_Version --no-progress
 
-
 # # Install NodeJS
 #RUN choco install nodejs-lts -y --version $Env:Node_Version --no-progress
 
 # # Install python
 RUN choco install -y python3 --version $Env:Python_Version --no-progress; `
-    refreshenv
+refreshenv
 
 # # Install ScriptCS
 # RUN choco install scriptcs -y --version $Env:ScriptCs_Version --no-progress
