@@ -1,10 +1,9 @@
-FROM ubuntu:18.04
-ARG Azure_Cli_Version=2.14.0\*
-ARG Azure_Powershell_Version=6.4.0
-ARG Octopus_Cli_Version=7.4.1
-ARG Octopus_Client_Version=8.8.3
-ARG Powershell_Version=7.0.6\*
-ARG Dotnet_Sdk_Version=3.1.401-1
+FROM ubuntu:24.04.2
+ARG Azure_Cli_Version=2.76.0
+ARG Azure_Powershell_Version=14.3.0
+ARG Azure_DataFactory_Tools_Version=1.13.0
+ARG Octopus_Cli_Version=9.0.0
+ARG Octopus_Client_Version=17.1.2309
 
   
 
@@ -13,8 +12,8 @@ ARG Dotnet_Sdk_Version=3.1.401-1
 RUN apt-get update && \
     apt-get install -y wget unzip apt-utils curl software-properties-common
 
-# get powershell for 18.04 to support PowerShell scripts in execution container
-RUN wget -q https://packages.microsoft.com/config/ubuntu/18.04/packages-microsoft-prod.deb && \
+# get powershell for 24.04 to support PowerShell scripts in execution container
+RUN wget -q https://packages.microsoft.com/config/ubuntu/24.04/packages-microsoft-prod.deb && \
     dpkg -i packages-microsoft-prod.deb && \
     apt-get update && \
     add-apt-repository universe && \
@@ -27,7 +26,7 @@ RUN apt-get install -y python3-pip groff
 # https://octopus.com/downloads/octopuscli#linux
 RUN apt-get update && \
     apt-get install -y --no-install-recommends gnupg curl ca-certificates apt-transport-https && \
-    curl -sSfL https://apt.octopus.com/public.key | apt-key add - && \
+    curl -sSfL https://apt.octopus.com/public.key | gpg --dearmor -o /etc/apt/trusted.gpg.d/octopus.gpg && \
     sh -c "echo deb https://apt.octopus.com/ stable main > /etc/apt/sources.list.d/octopus.com.list" && \
     apt-get update && \
     apt-get install -y octopuscli=${Octopus_Cli_Version}
@@ -42,13 +41,17 @@ RUN pwsh -c 'Install-Package -Force Octopus.Client -MaximumVersion "'${Octopus_C
 # https://docs.microsoft.com/en-us/powershell/azure/install-az-ps?view=azps-3.6.1
 RUN pwsh -c 'Install-Module -Force -Name Az -AllowClobber -Scope AllUsers -MaximumVersion "'${Azure_Powershell_Version}'"'
 
+# Get Azure Data Factory Tools
+# https://www.powershellgallery.com/packages/azure.datafactory.tools
+RUN pwsh -c 'Install-Module -Force -Name azure.datafactory.tools -Scope AllUsers -RequiredVersion "'${Azure_DataFactory_Tools_Version}'"'
+
 # Get Helm3
 # RUN wget --quiet -O - https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get | bash -s -- -v ${Helm_Version}
 
 # Get Azure CLI
 # https://docs.microsoft.com/en-us/cli/azure/install-azure-cli-apt?view=azure-cli-latest
 RUN wget --quiet -O - https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | tee /etc/apt/trusted.gpg.d/microsoft.asc.gpg > /dev/null && \
-    echo "deb [arch=amd64] https://packages.microsoft.com/repos/azure-cli/ bionic main" | tee /etc/apt/sources.list.d/azure-cli.list && \
+    echo "deb [arch=amd64] https://packages.microsoft.com/repos/azure-cli/ jammy main" | tee /etc/apt/sources.list.d/azure-cli.list && \
     apt-get update && \
     apt-get install -y azure-cli=${Azure_Cli_Version}
 
@@ -59,25 +62,24 @@ RUN apt-get update \
         \
         # .NET Core dependencies
         libc6 \
-        libgcc1 \
+        libgcc-s1 \
         libgssapi-krb5-2 \
-        libicu60 \
-        libssl1.1 \
+        libicu74 \
+        libssl3 \
         libstdc++6 \
         zlib1g \
     && rm -rf /var/lib/apt/lists/*
 
-# Get .NET SDK 3.1 and 5
-# https://docs.microsoft.com/en-us/dotnet/core/install/linux-package-manager-ubuntu-1804
+# Get .NET SDK 8.0 (matching the ARG version)
+# https://docs.microsoft.com/en-us/dotnet/core/install/linux-ubuntu
 RUN DOTNET_CLI_TELEMETRY_OPTOUT=1 && \
     echo "export DOTNET_CLI_TELEMETRY_OPTOUT=1" > /etc/profile.d/set-dotnet-env-vars.sh && \
-    apt-get install -y apt-transport-https && \
     apt-get update && \
-    apt-get install -y dotnet-sdk-3.1 dotnet-sdk-5.0
+    apt-get install -y dotnet-sdk-8.0
 
 # Get NodeJS
 # https://websiteforstudents.com/how-to-install-node-js-10-11-12-on-ubuntu-16-04-18-04-via-apt-and-snap/\
- RUN wget --quiet -O - https://deb.nodesource.com/setup_14.x | bash && \
+ RUN wget --quiet -O - https://deb.nodesource.com/setup_20.x | bash && \
      apt-get install -y nodejs
 
 # Get the Istio CLI
