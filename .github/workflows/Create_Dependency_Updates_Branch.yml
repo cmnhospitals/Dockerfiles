@@ -1,0 +1,14 @@
+name: "🌿 Dependency Updates Branch"
+
+on:
+  schedule:
+    - cron: "0 15 1 * *"
+  workflow_dispatch:
+
+jobs:
+  Create_Dependency_Updates_Branch:
+    name: "🌿 Create Branch"
+    uses: cmnhospitals/Reusable-Actions/.github/workflows/Create_Branch.yml@main
+    with:
+      branch_name: rc/dependency-updates
+    secrets: inherit
