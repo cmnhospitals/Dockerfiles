@@ -3,42 +3,33 @@
 #   docker buildx imagetools inspect ubuntu:26.04
 FROM ubuntu:26.04@sha256:cd21a4f68a617580279d4b091cb18e3af9fa8a87500665f0ae5f7f757d17d367
 
-ARG Image_Version=2026.0
+ARG Image_Version=2026.1
 
 LABEL org.opencontainers.image.title="octo-deploy-ubuntu" \
-      org.opencontainers.image.description="Ubuntu image with Azure CLI, PowerShell Core, Python, 7-Zip, Octopus CLI, Az PowerShell modules, .NET SDK, and Node.js for Octopus Deploy workers" \
+      org.opencontainers.image.description="Ubuntu image with PowerShell Core, Azure CLI, Bicep and AzCopy for Octopus Deploy workers" \
       org.opencontainers.image.source="https://github.com/cmnhospitals/Dockerfiles" \
       org.opencontainers.image.version=$Image_Version
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-# Parity with octo-deploy-windows (same ARG names, same defaults where the Linux
-# package feed offers them). Azure CLI: the packages.microsoft.com feed for Ubuntu
-# 26.04 only publishes 2.90.0+, so it runs ahead of the Windows image's 2.88.0.
+# The image carries only what the Octopus step templates and script modules call.
+# See doc/adr/0001 for what was removed and why. Azure CLI: the packages.microsoft.com
+# feed for Ubuntu 26.04 only publishes 2.90.0+, so it runs ahead of the Windows image's 2.88.0.
 ARG Azure_Cli_Version=2.90.0
 ARG Powershell_Version=7.6.4
-# Named SevenZip_Version rather than the Windows image's 7Zip_Version: shell variable names cannot start with a digit.
-ARG SevenZip_Version=26.02
-
-# Ubuntu-only tooling (not present in the Windows image)
-ARG Azure_Powershell_Version=14.3.0
-ARG Azure_DataFactory_Tools_Version=1.13.0
-ARG Octopus_Cli_Version=9.0.0
-ARG Octopus_Client_Version=17.1.2309
-ARG Dotnet_Sdk_Version=10.0
-ARG Node_Major_Version=22
+ARG Bicep_Version=0.48.1
+ARG Azcopy_Version=10.34.1
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-ENV DOTNET_CLI_TELEMETRY_OPTOUT=1 \
-    DOTNET_NOLOGO=1 \
-    # Ubuntu's python3 is "externally managed" (PEP 668) and refuses plain `pip install`.
-    # The Windows image's Python has no such guard, so opt out here for the same behaviour.
-    PIP_BREAK_SYSTEM_PACKAGES=1 \
-    PIP_ROOT_USER_ACTION=ignore \
-    PIP_NO_CACHE_DIR=1
+# Azure CLI normally downloads Bicep into ~/.azure/bin on first use. Point it at the
+# binary installed below instead, and stop it checking for newer versions, so no step
+# ever downloads Bicep at run time. These are the env-var forms of
+# `az config set bicep.use_binary_from_path=true` and `bicep.check_version=false`.
+ENV AZURE_BICEP_USE_BINARY_FROM_PATH=true \
+    AZURE_BICEP_CHECK_VERSION=false
 
-# Base utilities and .NET runtime dependencies (PowerShell and Octopus.Client are .NET apps)
+# Base utilities and .NET runtime dependencies (PowerShell and Octopus's Calamari are .NET apps)
 # https://learn.microsoft.com/dotnet/core/install/linux-ubuntu#dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -53,8 +44,6 @@ RUN apt-get update && \
         libssl3t64 \
         libstdc++6 \
         unzip \
-        wget \
-        xz-utils \
         zlib1g && \
     rm -rf /var/lib/apt/lists/*
 
@@ -82,68 +71,25 @@ RUN . /etc/os-release && \
     rm -rf /var/lib/apt/lists/* && \
     az version --output tsv --query '"azure-cli"' | grep -qx "${Azure_Cli_Version}"
 
-# Install Python 3 with pip and venv from the Ubuntu archive. groff is needed for `az` help pages.
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends python3 python3-pip python3-venv groff && \
-    ln -sf /usr/bin/python3 /usr/local/bin/python && \
-    ln -sf /usr/bin/pip3 /usr/local/bin/pip && \
-    rm -rf /var/lib/apt/lists/* && \
-    python --version && pip --version
+# Install Bicep from the pinned GitHub release binary. The deployment steps run
+# `az deployment sub create --template-file *.bicep`, which needs Bicep on hand.
+# The final check confirms `az` used this binary rather than downloading its own copy.
+# https://github.com/Azure/bicep/releases
+RUN curl -sSfL "https://github.com/Azure/bicep/releases/download/v${Bicep_Version}/bicep-linux-x64" -o /usr/local/bin/bicep && \
+    chmod +x /usr/local/bin/bicep && \
+    bicep --version | grep -q "${Bicep_Version}" && \
+    az bicep version | grep -q "${Bicep_Version}" && \
+    test ! -e /root/.azure/bin/bicep
 
-# Install 7-Zip from the official Linux build on 7-zip.org, pinned to the same version as the
-# Windows image. The archive name drops the dot from the version (26.02 -> 7z2602). The
-# upstream binary is `7zz`; `7z` is symlinked so scripts written against p7zip or Windows
-# `7z.exe` work unchanged.
-# https://www.7-zip.org/download.html
-RUN curl -sSfL "https://www.7-zip.org/a/7z${SevenZip_Version//./}-linux-x64.tar.xz" -o /tmp/7z.tar.xz && \
-    mkdir -p /opt/7zip && \
-    tar xJf /tmp/7z.tar.xz -C /opt/7zip && \
-    ln -s /opt/7zip/7zz /usr/local/bin/7zz && \
-    ln -s /opt/7zip/7zz /usr/local/bin/7z && \
-    rm /tmp/7z.tar.xz && \
-    7z i | grep -q "7-Zip (z) ${SevenZip_Version}"
-
-# Install Octopus CLI (`octo`) from the self-contained tarball. The octopuscli deb on apt.octopus.com
-# depends on libssl1.1, libicu<=67 and liblttng-ust0, none of which exist in Ubuntu 24.04 or later,
-# so it is uninstallable here. The tarball is a self-contained .NET single-file build that only
-# needs the runtime dependencies installed above.
-# https://octopus.com/downloads/octopuscli#linux
-RUN curl -sSfL "https://download.octopusdeploy.com/octopus-tools/${Octopus_Cli_Version}/OctopusTools.${Octopus_Cli_Version}.linux-x64.tar.gz" -o /tmp/octo.tar.gz && \
-    mkdir -p /opt/octo && \
-    tar zxf /tmp/octo.tar.gz -C /opt/octo && \
-    chmod +x /opt/octo/octo && \
-    ln -s /opt/octo/octo /usr/local/bin/octo && \
-    rm /tmp/octo.tar.gz && \
-    octo version | grep -q "^${Octopus_Cli_Version}"
-
-# Install Octopus.Client (netstandard2.0 assemblies copied to / so `Add-Type -Path /Octopus.Client.dll` keeps working)
-# https://octopus.com/docs/octopus-rest-api/octopus.client
-RUN pwsh -NoLogo -Command 'Install-Package -Force Octopus.Client -RequiredVersion "'${Octopus_Client_Version}'" -Source https://www.nuget.org/api/v2 -SkipDependencies -Scope AllUsers' && \
-    octopusClientPackagePath=$(pwsh -NoLogo -Command '(Get-Item ((Get-Package Octopus.Client).Source)).Directory.FullName') && \
-    cp -r "${octopusClientPackagePath}/lib/netstandard2.0/"* /
-
-# Install Az PowerShell modules
-# https://learn.microsoft.com/powershell/azure/install-azps-linux
-RUN pwsh -NoLogo -Command 'Install-Module -Force -Name Az -AllowClobber -Scope AllUsers -RequiredVersion "'${Azure_Powershell_Version}'"'
-
-# Install Azure Data Factory Tools
-# https://www.powershellgallery.com/packages/azure.datafactory.tools
-RUN pwsh -NoLogo -Command 'Install-Module -Force -Name azure.datafactory.tools -Scope AllUsers -RequiredVersion "'${Azure_DataFactory_Tools_Version}'"'
-
-# Install the .NET SDK from the Ubuntu archive (Canonical builds). .NET 8 is not packaged for
-# Ubuntu 26.04 by either Canonical or packages.microsoft.com, so this tracks the current LTS.
-# https://learn.microsoft.com/dotnet/core/install/linux-ubuntu-install?pivots=os-linux-ubuntu-2604
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends "dotnet-sdk-${Dotnet_Sdk_Version}" && \
-    rm -rf /var/lib/apt/lists/* && \
-    dotnet --version
-
-# Install Node.js LTS from NodeSource (Node 20 reached end of life in April 2026)
-# https://github.com/nodesource/distributions
-RUN curl -sSfL "https://deb.nodesource.com/setup_${Node_Major_Version}.x" | bash - && \
-    apt-get install -y --no-install-recommends nodejs && \
-    rm -rf /var/lib/apt/lists/* && \
-    node --version | grep -q "^v${Node_Major_Version}\."
+# Install AzCopy from the pinned GitHub release tarball (static binary). Used by the
+# Copy-StorageContainers script module.
+# https://github.com/Azure/azure-storage-azcopy/releases
+RUN curl -sSfL "https://github.com/Azure/azure-storage-azcopy/releases/download/v${Azcopy_Version}/azcopy_linux_amd64_${Azcopy_Version}.tar.gz" -o /tmp/azcopy.tar.gz && \
+    tar zxf /tmp/azcopy.tar.gz -C /tmp && \
+    mv /tmp/azcopy_linux_amd64_${Azcopy_Version}/azcopy /usr/local/bin/azcopy && \
+    chmod +x /usr/local/bin/azcopy && \
+    rm -rf /tmp/azcopy.tar.gz /tmp/azcopy_linux_amd64_${Azcopy_Version} && \
+    azcopy --version | grep -q "${Azcopy_Version}"
 
 # Clean up temp files and caches to keep image size down
-RUN rm -rf /tmp/* /var/tmp/* /root/.cache /root/.nuget /root/.local/share/PowerShell/PowerShellGet
+RUN rm -rf /tmp/* /var/tmp/* /root/.cache /root/.azure
