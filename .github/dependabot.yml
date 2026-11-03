@@ -1,0 +1,27 @@
+version: 2
+
+updates:
+  - package-ecosystem: "docker"
+    directories:
+      - "/octo-deploy-ubuntu"
+      - "/octo-deploy-windows"
+      - "/octo-tentacle-ubuntu"
+      - "/ubuntu-chrome"
+      - "/windows-chrome"
+    target-branch: "rc/dependency-updates"
+    schedule:
+      interval: "cron"
+      cronjob: "0 9 2 * *"
+      timezone: "America/Denver"
+    open-pull-requests-limit: 5
+    cooldown:
+      default-days: 3
+      exclude:
+        - "@cmnhospitals/*"
+    groups:
+      patch-updates:
+        update-types: ["patch"]
+      minor-updates:
+        update-types: ["minor"]
+      major-updates:
+        update-types: ["major"]

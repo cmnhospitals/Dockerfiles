@@ -1,0 +1,15 @@
+name: "🔁 Sync Branches"
+
+on:
+  schedule:
+    - cron: "0 1 * * 0"
+  workflow_dispatch:
+
+jobs:
+  Sync_Branches:
+    name: "🔁 Sync Branches"
+    uses: cmnhospitals/Reusable-Actions/.github/workflows/Sync_Branches.yml@main
+    with:
+      base_branch: rc/dependency-updates
+      head_branch: main
+    secrets: inherit
