@@ -1,0 +1,10 @@
+# ACR multi-step task: rebuild the hub worker image and restart the worker onto it.
+# Triggered by ACR's base image tracking whenever octopusdeploy/tentacle:latest moves.
+# Set the worker with: --set WorkerResourceGroup=<rg> --set WorkerName=<container group>
+version: v1.1.0
+steps:
+  - build: -t $Registry/octo-tentacle-ubuntu:{{.Run.ID}} -t $Registry/octo-tentacle-ubuntu:latest --pull .
+  - push:
+      - $Registry/octo-tentacle-ubuntu:{{.Run.ID}}
+      - $Registry/octo-tentacle-ubuntu:latest
+  - cmd: mcr.microsoft.com/azure-cli bash -c "az login --identity --output none && az container restart --resource-group {{.Values.WorkerResourceGroup}} --name {{.Values.WorkerName}}"

@@ -3,10 +3,10 @@
 # steps on this worker cannot use an execution container; the tools octo-deploy-ubuntu would
 # have supplied are installed here instead. See doc/adr/0001.
 #
-# Base: Octopus's own Tentacle image (Ubuntu 24.04), pinned to a build-number tag and its
-# digest. Refresh both with:
-#   docker buildx imagetools inspect octopusdeploy/tentacle:<tag>
-FROM octopusdeploy/tentacle:13.1.4688@sha256:c666f277f9c32fb80074e829ef0d5ce9599ba1fb3eebda68cf1f0a85da02152a
+# Base: Octopus's own Tentacle image (Ubuntu 24.04). Octopus publishes a build most days and
+# `latest` follows it. The ACR task in acr-task.yaml rebuilds this image whenever `latest`
+# moves and restarts the worker onto it (doc/adr/0002).
+FROM octopusdeploy/tentacle:latest
 
 ARG Image_Version=2026.0
 

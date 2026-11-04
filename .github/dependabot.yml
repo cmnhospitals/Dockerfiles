@@ -5,7 +5,8 @@ updates:
     directories:
       - "/octo-deploy-ubuntu"
       - "/octo-deploy-windows"
-      - "/octo-tentacle-ubuntu"
+      # octo-tentacle-ubuntu is not listed: its FROM line is moved daily by the
+      # Build_Octo_Tentacle_Ubuntu workflow (octo-tentacle-ubuntu/doc/adr/0002).
       - "/ubuntu-chrome"
       - "/windows-chrome"
     target-branch: "rc/dependency-updates"
