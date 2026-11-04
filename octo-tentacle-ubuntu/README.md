@@ -6,12 +6,12 @@ Octopus Tentacle image with the deploy tools baked in: PowerShell Core, Azure CL
 
 `octopusdeploy/tentacle:latest` (Octopus's own Linux Tentacle image, Ubuntu 24.04). Octopus publishes a build most days and `latest` follows it. An ACR task in the worker's registry, defined by [`acr-task.yaml`](acr-task.yaml), rebuilds this image whenever `latest` moves, pushes it as `octo-tentacle-ubuntu:latest` and `octo-tentacle-ubuntu:<run id>`, and restarts the worker's container group so it pulls the new image. See [ADR 0002](doc/adr/0002-rebuild-daily-from-the-newest-tentacle-tag.md).
 
-Creating the task (system-assigned identity; it needs AcrPush on the registry and rights to restart the container group):
+Creating the task (system-assigned identity; it needs rights to restart the container group and none to push to its own registry; this repository is public, so no token):
 
 ```
 az acr task create --registry <acr> --name octo-tentacle-ubuntu \
   --context https://github.com/cmnhospitals/Dockerfiles.git#main:octo-tentacle-ubuntu \
-  --file acr-task.yaml --git-access-token <token> --commit-trigger-enabled false \
+  --file acr-task.yaml --commit-trigger-enabled false \
   --assign-identity [system] \
   --set WorkerResourceGroup=<rg> --set WorkerName=<container group>
 az acr task run --registry <acr> --name octo-tentacle-ubuntu

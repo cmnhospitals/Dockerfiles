@@ -30,5 +30,5 @@ Alternatives considered:
 
 - The worker is on the newest Tentacle within about an hour of Octopus publishing it.
 - The restart takes about a minute and can come at any time of day. A deployment step running on the worker at that moment fails and needs a retry.
-- The task's managed identity needs push rights on the registry and rights to restart the container group, and the task needs a GitHub token to read this private repository.
+- The task's managed identity needs rights to restart the container group (pushing to its own registry needs none). This repository is public, so the task reads it without a token.
 - A tool version change is an edit to the Dockerfile's `ARG`, made together with the matching change in `octo-deploy-ubuntu`; it takes effect on the next base image update, or on a manual `az acr task run`.
