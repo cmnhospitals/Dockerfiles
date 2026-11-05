@@ -6,7 +6,7 @@ updates:
       - "/octo-deploy-ubuntu"
       - "/octo-deploy-windows"
       # octo-tentacle-ubuntu is not listed: it builds FROM octopusdeploy/tentacle:latest
-      # and an ACR task rebuilds it when that moves (octo-tentacle-ubuntu/doc/adr/0002).
+      # and an ACR task rebuilds it nightly (octo-tentacle-ubuntu/doc/adr/0002).
       - "/ubuntu-chrome"
       - "/windows-chrome"
     schedule:

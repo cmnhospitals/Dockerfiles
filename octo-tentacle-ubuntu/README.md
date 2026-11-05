@@ -4,7 +4,7 @@ Octopus Tentacle image with the deploy tools baked in: PowerShell Core, Azure CL
 
 ## Base image and lifecycle
 
-`octopusdeploy/tentacle:latest` (Octopus's own Linux Tentacle image, Ubuntu 24.04). Octopus publishes a build most days and `latest` follows it. An ACR task in the worker's registry, defined by [`acr-task.yaml`](acr-task.yaml), rebuilds this image whenever `latest` moves, pushes it as `octo-tentacle-ubuntu:latest` and `octo-tentacle-ubuntu:<run id>`, and restarts the worker's container group so it pulls the new image. See [ADR 0002](doc/adr/0002-rebuild-daily-from-the-newest-tentacle-tag.md).
+`octopusdeploy/tentacle:latest` (Octopus's own Linux Tentacle image, Ubuntu 24.04). Octopus publishes a build most days and `latest` follows it. An ACR task in the worker's registry, defined by [`acr-task.yaml`](acr-task.yaml), rebuilds this image every night at 07:00 UTC (midnight MST, 1:00 during MDT) from whatever `latest` is, pushes it as `octo-tentacle-ubuntu:latest` and `octo-tentacle-ubuntu:<run id>`, and restarts the worker's container group so it pulls the new image. See [ADR 0002](doc/adr/0002-rebuild-daily-from-the-newest-tentacle-tag.md).
 
 Creating the task (system-assigned identity; it needs rights to restart the container group and none to push to its own registry; this repository is public, so no token):
 
@@ -12,12 +12,13 @@ Creating the task (system-assigned identity; it needs rights to restart the cont
 az acr task create --registry <acr> --name octo-tentacle-ubuntu \
   --context https://github.com/cmnhospitals/Dockerfiles.git#main:octo-tentacle-ubuntu \
   --file acr-task.yaml --commit-trigger-enabled false \
+  --base-image-trigger-enabled false --schedule "nightly:0 7 * * *" \
   --assign-identity [system] \
   --set WorkerResourceGroup=<rg> --set WorkerName=<container group>
 az acr task run --registry <acr> --name octo-tentacle-ubuntu
 ```
 
-The first run is required: ACR only starts tracking the base image after the task has built once.
+The first run builds `:latest` right away instead of waiting for the night. The base image trigger is off on purpose: it would restart the worker whenever Octopus publishes, including during the working day, and a deployment step running on it at that moment would fail.
 
 **Rolling back.** Point the container group at an earlier `octo-tentacle-ubuntu:<run id>` tag.
 

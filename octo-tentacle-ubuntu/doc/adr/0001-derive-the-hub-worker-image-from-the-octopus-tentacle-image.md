@@ -1,7 +1,7 @@
 # 0001: Derive the hub worker image from the Octopus Tentacle image with the deploy tools baked in
 
 ## Status
-Accepted (2026-11-03, shipped as `cmnhospitals/octo-tentacle-ubuntu:2026.0`). The base pinning and the hand-built Docker Hub release described below are superseded by [ADR 0002](0002-rebuild-daily-from-the-newest-tentacle-tag.md) (2026-11-04): an ACR task rebuilds from `octopusdeploy/tentacle:latest` whenever it moves. The rest stands.
+Accepted (2026-11-03, shipped as `cmnhospitals/octo-tentacle-ubuntu:2026.0`). The base pinning and the hand-built Docker Hub release described below are superseded by [ADR 0002](0002-rebuild-daily-from-the-newest-tentacle-tag.md) (2026-11-04): an ACR task rebuilds from `octopusdeploy/tentacle:latest` every night. The rest stands.
 
 ## Context
 

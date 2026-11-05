@@ -1,5 +1,5 @@
 # ACR multi-step task: rebuild the hub worker image and restart the worker onto it.
-# Triggered by ACR's base image tracking whenever octopusdeploy/tentacle:latest moves.
+# Runs nightly on the task's timer trigger (07:00 UTC), building from octopusdeploy/tentacle:latest.
 # Set the worker with: --set WorkerResourceGroup=<rg> --set WorkerName=<container group>
 version: v1.1.0
 steps:

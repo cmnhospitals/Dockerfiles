@@ -4,8 +4,8 @@
 # have supplied are installed here instead. See doc/adr/0001.
 #
 # Base: Octopus's own Tentacle image (Ubuntu 24.04). Octopus publishes a build most days and
-# `latest` follows it. The ACR task in acr-task.yaml rebuilds this image whenever `latest`
-# moves and restarts the worker onto it (doc/adr/0002).
+# `latest` follows it. The ACR task in acr-task.yaml rebuilds this image every night and
+# restarts the worker onto it (doc/adr/0002).
 FROM octopusdeploy/tentacle:latest
 
 ARG Image_Version=2026.0

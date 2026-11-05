@@ -1,4 +1,4 @@
-# 0002: Rebuild with an ACR task whenever the Tentacle base image moves
+# 0002: Rebuild nightly with an ACR task from the newest Tentacle image
 
 ## Status
 Accepted (2026-11-04)
@@ -13,7 +13,7 @@ The worker already pulls its image from an Azure Container Registry with a manag
 
 The Dockerfile builds `FROM octopusdeploy/tentacle:latest`, and an ACR task in the worker's registry, defined by `acr-task.yaml`, owns the image's lifecycle:
 
-1. **ACR's base image tracking triggers it.** `octopusdeploy/tentacle` is a public Docker Hub repo with a stable tag, so ACR checks it every 10 to 60 minutes and runs the task when it moves. It is a verified-publisher image, so Docker Hub's anonymous pull limit does not apply.
+1. **A timer runs it every night at 07:00 UTC** (midnight MST; 1:00 local while Denver is on MDT, since ACR schedules are UTC only). It pulls `octopusdeploy/tentacle:latest` fresh each time. That is a verified-publisher image, so Docker Hub's anonymous pull limit does not apply. The base image trigger is off.
 2. **The task builds from this repository and pushes into the registry** as `octo-tentacle-ubuntu:latest` and `octo-tentacle-ubuntu:<run id>`. The Dockerfile's install steps assert each tool's pinned version, so a bad build fails before anything is pushed.
 3. **The task restarts the worker's container group**, which pulls the new `latest`. The container group's definition never changes.
 
@@ -24,11 +24,11 @@ The image is no longer pushed to Docker Hub; nothing pulls it from there. This d
 Alternatives considered:
 
 - A GitHub Actions workflow that builds, pushes to Docker Hub, imports into ACR and runs an Octopus runbook to roll the worker. Rejected: four systems and their secrets to do what one ACR task does.
-- A daily timer instead of the base image trigger, to keep restarts out of the working day. Rejected: it restarts the worker every day whether or not anything changed.
+- ACR's base image trigger, which runs the task within 10 to 60 minutes of Octopus publishing. Chosen first, then rejected: the restart lands at any time of day, and a deployment step running on the worker at that moment fails. A nightly restart costs nothing, since nothing deploys at midnight.
 
 ## Consequences
 
-- The worker is on the newest Tentacle within about an hour of Octopus publishing it.
-- The restart takes about a minute and can come at any time of day. A deployment step running on the worker at that moment fails and needs a retry.
+- The worker is at most one day behind the newest Tentacle.
+- The worker restarts every night for about a minute, whether or not Octopus published anything new. A deployment step running on it then fails and needs a retry; at midnight that is rare.
 - The task's managed identity needs rights to restart the container group (pushing to its own registry needs none). This repository is public, so the task reads it without a token.
-- A tool version change is an edit to the Dockerfile's `ARG`, made together with the matching change in `octo-deploy-ubuntu`; it takes effect on the next base image update, or on a manual `az acr task run`.
+- A tool version change is an edit to the Dockerfile's `ARG`, made together with the matching change in `octo-deploy-ubuntu`; it takes effect on the next nightly run, or immediately with a manual `az acr task run`.
