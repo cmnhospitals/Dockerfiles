@@ -4,7 +4,7 @@
 # 4.8; the plain servercore image only ships 4.7.2, forcing a slow in-container Framework upgrade
 # with an unresolved "reboot required" step). Refresh the digest with:
 #   docker buildx imagetools inspect mcr.microsoft.com/dotnet/framework/runtime:4.8-windowsservercore-ltsc2019
-FROM mcr.microsoft.com/dotnet/framework/runtime:4.8-windowsservercore-ltsc2019@sha256:f13cecedc057a90fcaffd5a5af9e968e1cb39b3e856271d128071f25d3dd159e
+FROM mcr.microsoft.com/dotnet/framework/runtime:4.8-windowsservercore-ltsc2019@sha256:266a560ada0514d9700076e2d08fd8d308770c77a6d8492c2096220c2de5b54d
 
 ARG Image_Version=2026.0
 
