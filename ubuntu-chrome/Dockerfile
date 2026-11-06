@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM ubuntu:26.04
 
 RUN  apt update \
     && apt install -y unzip gnupg2 xvfb libxi6 libgconf-2-4 curl
