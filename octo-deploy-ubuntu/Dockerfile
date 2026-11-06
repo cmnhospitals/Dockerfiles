@@ -1,7 +1,7 @@
 # Built on Ubuntu 26.04 LTS (Resolute Raccoon), pinned by digest for reproducible builds.
 # Refresh the digest with:
 #   docker buildx imagetools inspect ubuntu:26.04
-FROM ubuntu:26.04@sha256:cd21a4f68a617580279d4b091cb18e3af9fa8a87500665f0ae5f7f757d17d367
+FROM ubuntu:26.04@sha256:6a06111c3b0a8600feadb270aec771dc239bf407b25625f93f44ab00e11f4d3c
 
 ARG Image_Version=2026.1
 
